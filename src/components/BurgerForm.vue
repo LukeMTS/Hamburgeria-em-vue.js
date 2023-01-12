@@ -8,7 +8,7 @@
           <input type="text" name="nome" id="nome" v-model="nome" required placeholder="Digite o seu nome:">
         </div>
         <div class="input-container">
-          <label for="pao">Selecione o sue pão:</label>
+          <label for="pao">Selecione o seu pão:</label>
           <select name="pao" id="pao" v-model="pao" required>
             <option value="">Selecione o seu Pão</option>
             <option v-for="pao in paes" :key="pao.id" :value="pao.tipo">
