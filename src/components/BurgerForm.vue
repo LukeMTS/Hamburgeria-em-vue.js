@@ -4,26 +4,38 @@
     <div>
       <form id="burger-form" @submit="createBurger">
         <div class="input-container">
-          <label for="nome">Nome do cliente:</label>
-          <input type="text" name="nome" id="nome" v-model="nome" required placeholder="Digite o seu nome:">
+          <label for="">Nome do cliente</label>
+          <div>
+            <input @blur="v$.nome.$touch" type="text" name="nome" id="nome" v-model="nome"
+              placeholder="Digite o seu nome:">
+            <div v-for="error of v$.nome.$errors" :key="error.$uid">
+              <div class="error">{{ error.$message }}</div>
+            </div>
+          </div>
         </div>
         <div class="input-container">
           <label for="pao">Selecione o seu pão:</label>
-          <select name="pao" id="pao" v-model="pao" required>
-            <option value="">Selecione o seu Pão</option>
+          <select @blur="v$.pao.$touch" name="pao" id="pao" v-model="pao">
+            <option value="">Selecione o tipo de pão</option>
             <option v-for="pao in paes" :key="pao.id" :value="pao.tipo">
               {{ pao.tipo }}
             </option>
           </select>
+          <div v-for="error of v$.pao.$errors" :key="error.$uid">
+            <div class="error">{{ error.$message }}</div>
+          </div>
         </div>
         <div class="input-container">
           <label for="carne">Escolha a carne do seu Burger:</label>
-          <select name="carne" id="carne" v-model="carne" required>
+          <select @blur="v$.carne.$touch" name="carne" id="carne" v-model="carne">
             <option value="">Selecione o tipo de carne</option>
             <option v-for="carne in carnes" :key="carne.id" :value="carne.tipo">
               {{ carne.tipo }}
             </option>
           </select>
+          <div v-for="error of v$.carne.$errors" :key="error.$uid">
+            <div class="error">{{ error.$message }}</div>
+          </div>
         </div>
         <div id="opcionais-contaier" class="input-container">
           <label id="opcionais-title" for="opcionais">Selecione os opcionais:</label>
@@ -42,8 +54,16 @@
 
 <script>
 import Message from "../components/Message.vue"
+import { useVuelidate } from '@vuelidate/core'
+import { required, maxLength, helpers } from '@vuelidate/validators'
+
+const alphaPt = helpers.regex(/^[a-záàâãéèêíïóôõöúçñ ]+$/i)
 
 export default {
+  setup() {
+    return { v$: useVuelidate() }
+  },
+
   name: "BurgerForm",
 
   components: {
@@ -63,6 +83,28 @@ export default {
 
     }
   },
+  validations() {
+    return {
+      nome: {
+        alphaPt: helpers.withMessage('Este campo só aceita letras', alphaPt),
+        required: helpers.withMessage('Este campo não pode ser vazio', required),
+        maxLength: helpers.withMessage(
+          ({
+            $invalid,
+            $params,
+            $model
+          }) => `Este campo tem o valor de '${$model}' mas deve ter no máximo ${$params.max} caracteres, então isto é ${$invalid ? 'invalido' : 'valido'}`,
+          maxLength(255)
+        )
+      },
+      pao: {
+        required: helpers.withMessage('É necessário selecionar um tipo de pão', required),
+      },
+      carne: {
+        required: helpers.withMessage('É necessário selecionar um tipo de pão', required),
+      }
+    }
+  },
   methods: {
     async getIngredientes() {
       const req = await fetch("http://localhost:3000/ingredientes");
@@ -74,6 +116,11 @@ export default {
     },
     async createBurger(e) {
       e.preventDefault();
+
+      const result = await this.v$.$validate()
+
+      if (!result)
+        return
 
       const data = {
         nome: this.nome,
@@ -183,5 +230,9 @@ select {
 .submit-btn:hover {
   background-color: transparent;
   color: #222;
+}
+
+.error {
+  padding: 5px;
 }
 </style>
